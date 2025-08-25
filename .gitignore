@@ -1,0 +1,36 @@
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Spring Boot
+*.war
+*.jar
+
+# Docker
+*.pid
+
+# Misc
+*.swp
+*.swo
+
+# Application config (local overrides)
+application-local.yml
+application-local.properties
+

@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/TodoTeamDB
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  sql:
+    init:
+      mode: never
+  main:
+    allow-bean-definition-overriding: true
+
+jwt:
+  secret: "my-very-secret-key-which-should-be-long-enough-for-hmac"
+  expiration: 43200000 # 12 hours in milliseconds
+
+server:
+  error:
+    include-message: always
