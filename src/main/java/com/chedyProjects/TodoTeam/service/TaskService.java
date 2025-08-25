@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,13 +20,22 @@ public class TaskService {
     private final UserRepository userRepository;
 
     public List<TaskDto> getAccessibleTasks(User user) {
-        return taskRepository.findAccessibleTasks(user).stream()
+        System.out.println("Getting accessible tasks for user: " + user.getId() + " (" + user.getEmail() + ")");
+        List<Task> tasks = taskRepository.findAccessibleTasks(user.getId());
+        System.out.println("Found " + tasks.size() + " accessible tasks");
+        for (Task task : tasks) {
+            System.out.println("  Task ID: " + task.getId() + 
+                             ", Title: " + task.getTitle() + 
+                             ", Owner: " + (task.getOwner() != null ? task.getOwner().getId() : "null") + 
+                             ", Assigned: " + (task.getAssigned() != null ? task.getAssigned().getId() : "null"));
+        }
+        return tasks.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
     public TaskDto getAccessibleTaskById(Long id, User user) {
-        Task task = taskRepository.findAccessibleTaskById(id, user)
+        Task task = taskRepository.findAccessibleTaskById(id, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied"));
         return toDto(task);
     }
