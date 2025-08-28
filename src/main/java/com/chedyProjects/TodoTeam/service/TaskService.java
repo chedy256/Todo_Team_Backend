@@ -70,9 +70,20 @@ public class TaskService {
     public TaskDto updateTask(Long id, String description, String priority, Long dueDate, Long assigneeId, User user) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
-        if (!task.getOwner().getId().equals(user.getId())) {
+        
+        // Check if this is a self-assignment to an unassigned task (green flag)
+        boolean isSelfAssignmentToUnassignedTask = task.getAssigned() == null && 
+                                                   assigneeId != null && 
+                                                   assigneeId.equals(user.getId()) &&
+                                                   description == null && 
+                                                   priority == null && 
+                                                   dueDate == null;
+        
+        // Allow operation if user is owner OR if it's a valid self-assignment to unassigned task
+        if (!task.getOwner().getId().equals(user.getId()) && !isSelfAssignmentToUnassignedTask) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can update");
         }
+        
         if (description != null) task.setDescription(description);
         if (priority != null) {
             try {
@@ -83,13 +94,9 @@ public class TaskService {
         }
         if (dueDate != null) task.setDueDate(dueDate);
         if (assigneeId != null) {
-            if (task.getAssigned() == null) {
-                User assignee = userRepository.findById(assigneeId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee not found"));
-                task.setAssigned(assignee);
-            } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee already set");
-            }
+            User assignee = userRepository.findById(assigneeId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee not found"));
+            task.setAssigned(assignee);
         }
         taskRepository.save(task);
         return toDto(task);
