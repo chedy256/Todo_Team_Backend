@@ -7,10 +7,13 @@ A Spring Boot REST API for a collaborative todo/task management application with
 - **User Authentication**: JWT-based authentication with registration and login
 - **Task Management**: Create, read, update, and delete tasks
 - **Task Assignment**: Assign tasks to users and manage ownership
+- **Self-Assignment**: Users can assign themselves to unassigned tasks
+- **Task Completion**: Track task completion status with completion updates
 - **Access Control**: Users can only see:
   - Unassigned tasks (assignedId = null)
   - Tasks they own (ownerId = current user)
   - Tasks assigned to them (assignedId = current user)
+- **Completion Control**: Only task owners or assignees can update completion status
 - **Priority Management**: Support for LOW, NORMAL, and HIGH priority tasks
 - **Due Date Tracking**: Set and manage task due dates
 - **Database Integration**: PostgreSQL database with JPA/Hibernate
@@ -122,7 +125,7 @@ export DB_PASSWORD=your_secure_password
 - `GET /tasks` - Get accessible tasks for current user
 - `GET /tasks/{id}` - Get specific task (if accessible)
 - `POST /tasks` - Create a new task
-- `PUT /tasks/{id}` - Update a task (owner only)
+- `PUT /tasks/{id}` - Update a task (owner only, except for completion and self-assignment)
 - `DELETE /tasks/{id}` - Delete a task (owner only)
 
 ### Users
@@ -140,6 +143,15 @@ The application implements strict access control for tasks:
 3. **Assigned Tasks**: Users can see tasks assigned to them (assignedId = current user)
 
 Users cannot see tasks that don't meet any of these criteria.
+
+## Task Update Permissions
+
+The application has different permission levels for updating tasks:
+
+1. **Task Owners**: Can update all task properties (description, priority, dueDate, assigneeId, completed)
+2. **Task Assignees**: Can only update the completion status (`completed` field)
+3. **Self-Assignment**: Any user can assign themselves to an unassigned task (assignedId = null)
+4. **Completion Updates**: Both owners and assignees can mark tasks as completed or incomplete
 
 ## Request Examples
 
@@ -182,6 +194,40 @@ curl -X POST http://localhost:8080/tasks \
 ```bash
 curl -H "Authorization: Bearer <your-jwt-token>" \
   http://localhost:8080/tasks
+```
+
+### Update Task (Owner - All Properties)
+```bash
+curl -X PUT http://localhost:8080/tasks/1 \
+  -H "Authorization: Bearer <owner-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Updated description",
+    "priority": "HIGH",
+    "dueDate": 1693872000000,
+    "assigneeId": 2,
+    "completed": true
+  }'
+```
+
+### Update Task Completion (Assignee or Owner)
+```bash
+curl -X PUT http://localhost:8080/tasks/1 \
+  -H "Authorization: Bearer <assignee-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "completed": true
+  }'
+```
+
+### Self-Assign to Unassigned Task
+```bash
+curl -X PUT http://localhost:8080/tasks/1 \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "assigneeId": <your-user-id>
+  }'
 ```
 
 ## Development
