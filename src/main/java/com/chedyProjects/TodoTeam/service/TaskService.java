@@ -67,7 +67,7 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskDto updateTask(Long id, String description, String priority, Long dueDate, Long assigneeId, User user) {
+    public TaskDto updateTask(Long id, String description, String priority, Long dueDate, Long assigneeId, Boolean completed, User user) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
         
@@ -77,11 +77,23 @@ public class TaskService {
                                                    assigneeId.equals(user.getId()) &&
                                                    description == null && 
                                                    priority == null && 
-                                                   dueDate == null;
+                                                   dueDate == null &&
+                                                   completed == null;
         
-        // Allow operation if user is owner OR if it's a valid self-assignment to unassigned task
-        if (!task.getOwner().getId().equals(user.getId()) && !isSelfAssignmentToUnassignedTask) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can update");
+        // For most operations, user must be owner OR it's a valid self-assignment
+        boolean isOwner = task.getOwner().getId().equals(user.getId());
+        boolean isAssignee = task.getAssigned() != null && task.getAssigned().getId().equals(user.getId());
+        
+        // For non-completion updates, allow if user is owner OR if it's a valid self-assignment
+        if (!isOwner && !isSelfAssignmentToUnassignedTask) {
+            // If only trying to update completion status, allow if user is assignee or owner
+            if (completed != null && description == null && priority == null && dueDate == null && assigneeId == null) {
+                if (!isAssignee && !isOwner) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner or assignee can update completion status");
+                }
+            } else {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can update task details");
+            }
         }
         
         if (description != null) task.setDescription(description);
@@ -97,6 +109,9 @@ public class TaskService {
             User assignee = userRepository.findById(assigneeId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee not found"));
             task.setAssigned(assignee);
+        }
+        if (completed != null) {
+            task.setCompleted(completed);
         }
         taskRepository.save(task);
         return toDto(task);

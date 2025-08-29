@@ -47,7 +47,7 @@ public class TaskController {
     @PutMapping("/{id}")
     public Map<String, String> updateTask(@PathVariable Long id, @Valid @RequestBody UpdateTaskRequest req, @AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.getById(getUserId(userDetails));
-        taskService.updateTask(id, req.getDescription(), req.getPriority(), req.getDueDate(), req.getAssigneeId(), user);
+        taskService.updateTask(id, req.getDescription(), req.getPriority(), req.getDueDate(), req.getAssigneeId(), req.getCompleted(), user);
         return Map.of("status", "success");
     }
 
@@ -83,5 +83,6 @@ public class TaskController {
         private String priority;
         private Long dueDate;
         private Long assigneeId;
+        private Boolean completed;
     }
 }
